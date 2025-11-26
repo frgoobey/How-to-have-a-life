@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Code Poems All-in-One</title>
+<style>
+  body { font-family: monospace; background:#111; color:#eee; display:flex; flex-direction:column; align-items:center; padding:40px; }
+  h1 { text-align:center; margin-bottom:30px; }
+  .poem { border:1px solid #444; padding:15px; margin:10px; width:90%; max-width:600px; }
+  button { margin:5px; padding:8px 12px; font-size:14px; }
+</style>
+</head>
+<body>
+<h1>Code Poems All-in-One</h1>
+
+<div class="poem" id="neutral">
+  <h2>Neutral Poem</h2>
+  <button onclick="startPoem('neutral')">Start</button>
+  <button onclick="stopPoem('neutral')">Stop</button>
+  <a href="#" onclick="downloadPoem('neutral')">Download</a>
+</div>
+
+<div class="poem" id="dark">
+  <h2>Dark Poem</h2>
+  <button onclick="startPoem('dark')">Start</button>
+  <button onclick="stopPoem('dark')">Stop</button>
+  <a href="#" onclick="downloadPoem('dark')">Download</a>
+</div>
+
+<div class="poem" id="sad">
+  <h2>Sad Poem</h2>
+  <button onclick="startPoem('sad')">Start</button>
+  <button onclick="stopPoem('sad')">Stop</button>
+  <a href="#" onclick="downloadPoem('sad')">Download</a>
+</div>
+
+<div class="poem" id="promiseVoid">
+  <h2>Promise&lt;void&gt; Poem</h2>
+  <button onclick="startPoem('promiseVoid')">Start</button>
+  <button onclick="stopPoem('promiseVoid')">Stop</button>
+  <a href="#" onclick="downloadPoem('promiseVoid')">Download</a>
+</div>
+
+<script type="module">
+let fredVoice = null;
+await new Promise(r => {
+  const v = speechSynthesis.getVoices();
+  if (v.length > 0) { fredVoice = v.find(x=>x.name==="Fred")||null; r(); }
+  else { speechSynthesis.onvoiceschanged = ()=>{ fredVoice = speechSynthesis.getVoices().find(x=>x.name==="Fred")||null; r(); }; }
+});
+
+const audio = new AudioContext();
+function freq(n){ return {A:440,Ab:415.3,Db:277.18,E:329.63,Gb:369.99,B:493.88,Bb:466.16,D:293.66,Db_up:554.37}[n]; }
+async function playNote(n,d){ if(!n)return new Promise(r=>setTimeout(r,d)); const o=audio.createOscillator(),g=audio.createGain(); o.type="sine"; o.frequency.value=freq(n); o.connect(g).connect(audio.destination); g.gain.setValueAtTime(0.2,audio.currentTime); o.start(); await new Promise(r=>setTimeout(r,d)); o.stop(); }
+
+const S=200,M=350,L=550;
+const melody=[["A",S],["Ab",S],["Db",M],["E",L],[null,M],["Db",S],["Gb",S],["Ab",S],["A",L],[null,M],
+              ["A",S],["Ab",S],["B",L],[null,M],["Db",S],["A",S],["Ab",S],["B",L],[null,M],
+              ["Db",S],["E",S],["D",S],["Db_up",L],[null,M],["Db",S],["B",S],["Bb",S],["A",L]];
+
+async function playMelody(){ for(const[n,d]of melody) await playNote(n,d); }
+
+const poems = {
+  neutral:{running:false, instance:null, classDef:class { constructor(){this.state="tired";} async run(){ poems.neutral.running=true; while(poems.neutral.running){ this.state=["joy","fear","tired","alive"][Math.floor(Math.random()*4)]; await new Promise(r=>setTimeout(r,100)); }} }},
+  dark:{running:false, instance:null, classDef:class { constructor(){this.heartbeat=0;} async run(){ poems.dark.running=true; while(poems.dark.running){ this.heartbeat++; await new Promise(r=>setTimeout(r,100)); } } }},
+  sad:{running:false, instance:null, classDef:class { constructor(){this.history=[];} async run(){ poems.sad.running=true; while(poems.sad.running){ const f=["okay","not_okay","pretending","lonely"][Math.floor(Math.random()*4)]; this.history.push(f); await new Promise(r=>setTimeout(r,100)); }} }},
+  promiseVoid:{running:false, instance:null, classDef:class { constructor(){this.cycles=0;} async run(){ poems.promiseVoid.running=true; while(poems.promiseVoid.running){ this.cycles++; await new Promise(r=>setTimeout(r,50)); }} }},
+};
+
+async function startPoem(name){
+  if(!poems[name].running){
+    await playMelody();
+    poems[name].instance = new poems[name].classDef();
+    poems[name].instance.run();
+  }
+}
+
+function stopPoem(name){ poems[name].running=false; }
+
+function downloadPoem(name){
+  const blob = new Blob([document.querySelector(`#${name} h2`).textContent + "\n\n[Poem HTML not included in download]"], {type:'text/plain'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = name + ".txt";
+  a.click();
+}
+</script>
+</body>
+</html>
